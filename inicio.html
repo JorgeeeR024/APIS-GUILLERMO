@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Productos</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    form { margin-bottom: 20px; }
+    label { display: block; margin: 10px 0; }
+    button { margin: 5px; padding: 8px 15px; }
+  </style>
+</head>
+<body>
+  <h1>Productos</h1>
+
+  <!-- Formulario simple -->
+  <form id="form">
+    <input type="number" name="id" placeholder="ID (solo para editar/eliminar)">
+    <input name="name" placeholder="Nombre" required>
+    <input type="number" name="price" placeholder="Precio" step="0.01" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="number" name="NumCC" placeholder="Número CC" required>
+
+    <button type="submit">Crear</button>
+    <button type="button" id="editar">Editar</button>
+    <button type="button" id="eliminar">Eliminar</button>
+  </form>
+
+  <div id="resultado"></div>
+  <ul id="lista"></ul>
+
+<script>
+  // Mostrar todos los productos
+  async function mostrarProductos() {
+    const respuesta = await fetch('productos.php');
+    const productos = await respuesta.json();
+    
+    let html = '';
+    productos.forEach(p => {
+      html += `<li>${p.id}: ${p.name} - $${p.price} (${p.email}, CC:${p.NumCC})</li>`;
+    });
+    document.getElementById('lista').innerHTML = html;
+  }
+
+  // Operaciones CRUD
+  async function operacion(method, id, datos) {
+    const url = id ? `productos.php?id=${id}` : 'productos.php';
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos)
+    });
+    return await res.json();
+  }
+
+  // Eventos
+  document.getElementById('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const form = e.target;
+    const datos = {
+      name: form.name.value,
+      price: form.price.value,
+      email: form.email.value,
+      NumCC: form.NumCC.value
+    };
+    const res = await operacion('POST', null, datos);
+    document.getElementById('resultado').textContent = JSON.stringify(res);
+    form.reset();
+    mostrarProductos();
+  });
+
+  document.getElementById('editar').addEventListener('click', async () => {
+    const id = document.querySelector('[name="id"]').value;
+    if (!id) return alert('Necesitas un ID para editar');
+    
+    const datos = {
+      name: document.querySelector('[name="name"]').value,
+      price: document.querySelector('[name="price"]').value,
+      email: document.querySelector('[name="email"]').value,
+      NumCC: document.querySelector('[name="NumCC"]').value
+    };
+    
+    const res = await operacion('PUT', id, datos);
+    document.getElementById('resultado').textContent = JSON.stringify(res);
+    mostrarProductos();
+  });
+
+  document.getElementById('eliminar').addEventListener('click', async () => {
+    const id = document.querySelector('[name="id"]').value;
+    if (!id) return alert('Necesitas un ID para eliminar');
+    
+    const res = await operacion('DELETE', id, null);
+    document.getElementById('resultado').textContent = JSON.stringify(res);
+    mostrarProductos();
+  });
+
+  // Cargar productos al inicio
+  mostrarProductos();
+</script>
+</body>
+</html>
